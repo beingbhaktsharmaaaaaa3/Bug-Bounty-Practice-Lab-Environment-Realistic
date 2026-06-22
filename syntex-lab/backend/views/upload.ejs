@@ -41,8 +41,8 @@
                   <td style="font-size:12px;color:var(--text-muted);"><%= (f.file_size/1024).toFixed(1) %>KB</td>
                   <td><% if (f.is_public) { %><span class="badge badge-warning">Public</span><% } else { %><span class="badge badge-gray">Private</span><% } %></td>
                   <td>
-                    <!-- VULNERABILITY: Path traversal in /download?file= parameter -->
-                    <a href="/download?file=<%= f.stored_name %>" class="btn btn-secondary btn-sm">Download</a>
+                    <!-- VULNERABILITY: Path traversal in /upload/download?file= parameter -->
+                    <a href="/upload/download?file=<%= f.stored_name %>" class="btn btn-secondary btn-sm">Download</a>
                   </td>
                 </tr>
                 <% }) %>
