@@ -1,0 +1,84 @@
+# Syntex Lab — Editor Configuration
+# https://editorconfig.org
+#
+# Supported by: VS Code, JetBrains, Vim, Neovim, Sublime Text,
+#               Atom, Emacs, Nano, and most modern editors.
+# VS Code users: install the "EditorConfig for VS Code" extension.
+
+# Top-most EditorConfig file — stop searching parent directories
+root = true
+
+# ── Global defaults (all files) ──────────────────────────────
+[*]
+charset                  = utf-8
+end_of_line              = lf
+insert_final_newline     = true
+trim_trailing_whitespace = true
+indent_style             = space
+indent_size              = 4
+
+# ── JavaScript & Node.js ─────────────────────────────────────
+[*.{js,mjs,cjs}]
+indent_style = space
+indent_size  = 4
+max_line_length = 120
+
+# ── JSON ─────────────────────────────────────────────────────
+[*.json]
+indent_style = space
+indent_size  = 2
+
+# ── EJS Templates ────────────────────────────────────────────
+[*.ejs]
+indent_style = space
+indent_size  = 2
+
+# ── HTML ─────────────────────────────────────────────────────
+[*.html]
+indent_style = space
+indent_size  = 2
+
+# ── CSS ──────────────────────────────────────────────────────
+[*.css]
+indent_style = space
+indent_size  = 2
+
+# ── YAML (docker-compose, CI configs) ────────────────────────
+[*.{yml,yaml}]
+indent_style = space
+indent_size  = 2
+
+# ── SQL ──────────────────────────────────────────────────────
+[*.sql]
+indent_style = space
+indent_size  = 4
+trim_trailing_whitespace = true
+
+# ── Markdown (README, docs) ───────────────────────────────────
+[*.md]
+trim_trailing_whitespace = false
+max_line_length          = off
+
+# ── Shell scripts ─────────────────────────────────────────────
+[*.sh]
+indent_style = space
+indent_size  = 4
+end_of_line  = lf
+
+# ── Nginx config ──────────────────────────────────────────────
+[nginx.conf]
+indent_style = space
+indent_size  = 4
+
+# ── Dockerfile ────────────────────────────────────────────────
+[Dockerfile]
+indent_style = space
+indent_size  = 4
+
+# ── .env files ────────────────────────────────────────────────
+[.env*]
+insert_final_newline = true
+
+# ── Makefile (tabs required) ──────────────────────────────────
+[Makefile]
+indent_style = tab
