@@ -123,6 +123,7 @@ app.get('/settings', require('./middleware/auth').requireAuth, (req, res) => {
 // Additive only — zero changes to existing routes
 app.use('/', require('./routes/advanced'));    // SSTI, Host Header, CRLF, Email Header, Log Inject, Session Fix, Clickjacking, 2FA
 app.use('/', require('./routes/vulns-extra')); // XXE, Mass Assignment, Prototype Pollution, Zip Slip
+app.use('/otp', require('./routes/otp'));
 
 // ─── Bug bounty platform (/program/*) ────────────────────────────
 app.use('/program/hints',      require('./routes/hints'));
