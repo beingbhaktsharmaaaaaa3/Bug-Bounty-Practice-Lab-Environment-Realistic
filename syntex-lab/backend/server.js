@@ -124,6 +124,35 @@ app.get('/settings', require('./middleware/auth').requireAuth, (req, res) => {
 app.use('/', require('./routes/advanced'));    // SSTI, Host Header, CRLF, Email Header, Log Inject, Session Fix, Clickjacking, 2FA
 app.use('/', require('./routes/vulns-extra')); // XXE, Mass Assignment, Prototype Pollution, Zip Slip
 app.use('/otp', require('./routes/otp'));
+app.use('/', require('./routes/modern-vulns')); // v4.2: AI/LLM, SAML, Tenant, CDN, Webhook, K8s, Storage, Reset, Email verify, Rate limit
+
+// ── ADD these route aliases so pages are findable ─────────────────
+app.get('/ai-assistant',   (req,res) => res.redirect('/ai-assistant'));   // already handled by modern-vulns
+app.get('/employees',      require('./middleware/auth').requireAuth, async (req,res) => {
+    const db = require('./database/db');
+    const r  = await db.query(`SELECT * FROM employees ORDER BY department, full_name`).catch(()=>({rows:[]}));
+    res.render('vulns/employees', { title:'Employee Directory — Syntex Solutions', employees:r.rows, user:req.session.user });
+});
+app.get('/invoices',       require('./middleware/auth').requireAuth, async (req,res) => {
+    const db = require('./database/db');
+    const uid = req.session.userId;
+    // VULNERABILITY: IDOR — no ownership check, admin sees all, users should only see their own
+    const r = await db.query(`SELECT * FROM invoices ORDER BY created_at DESC`).catch(()=>({rows:[]}));
+    res.render('vulns/invoices', { title:'Invoices — Syntex Solutions', invoices:r.rows, user:req.session.user });
+});
+app.get('/api-tokens',     require('./middleware/auth').requireAuth, async (req,res) => {
+    const db = require('./database/db');
+    // VULNERABILITY: Returns ALL tokens, including other users' tokens and expired ones
+    const r = await db.query(`SELECT * FROM api_tokens_v2 ORDER BY created_at DESC`).catch(()=>({rows:[]}));
+    res.render('vulns/api-tokens', { title:'API Tokens — Syntex Solutions', tokens:r.rows, user:req.session.user });
+});
+app.get('/directory',      require('./middleware/auth').requireAuth, async (req,res) => {
+    const db = require('./database/db');
+    // VULNERABILITY: Sensitive fields (salary, ssn_last4, internal_notes, access_level) returned
+    const r = await db.query(`SELECT * FROM employees WHERE is_active=true ORDER BY department, full_name`).catch(()=>({rows:[]}));
+    res.render('vulns/employees', { title:'Employee Directory — Syntex Solutions', employees:r.rows, user:req.session.user });
+});
+
 
 // ─── Bug bounty platform (/program/*) ────────────────────────────
 app.use('/program/hints',      require('./routes/hints'));
