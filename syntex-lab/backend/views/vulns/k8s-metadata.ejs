@@ -1,0 +1,60 @@
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="top-header"><span class="header-title">K8s Metadata SSRF</span>
+    <div class="header-right"><a href="/profile/<%= user.id %>" class="header-user"><div class="header-avatar"><%= ((user.first_name||user.username).charAt(0)).toUpperCase() %></div></a></div>
+  </div>
+  <div class="page-body">
+    <div class="page-header"><h1>Internal URL Fetcher</h1><p>Fetch any URL server-side for debugging. Simulates cloud metadata SSRF.</p></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:960px;align-items:start;">
+      <div>
+        <div class="card">
+          <div class="card-header"><h3>Server-Side URL Fetch</h3></div>
+          <div class="card-body">
+            <div id="result" style="display:none;margin-bottom:14px;"></div>
+            <div class="form-group"><label>URL to Fetch</label>
+              <input type="text" id="url-input" placeholder="http://169.254.169.254/latest/meta-data">
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+              <% ['http://169.254.169.254/latest/meta-data','http://169.254.169.254/latest/meta-data/iam/security-credentials/syntex-prod-role','http://kubernetes.default.svc/api/v1','http://10.96.0.1/api'].forEach(u => { %>
+              <button onclick="document.getElementById('url-input').value='<%= u %>'" class="btn btn-secondary btn-sm" style="font-size:10px;"><%= u.split('/').slice(-2).join('/') %></button>
+              <% }) %>
+            </div>
+            <button onclick="fetchURL()" class="btn btn-primary" style="width:100%;">Fetch URL</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-4">
+          <div class="card-header"><h3>Attack Path</h3></div>
+          <div class="card-body" style="font-size:12px;color:var(--text-muted);">
+            <ol style="padding-left:18px;line-height:2;">
+              <li>Fetch <code>169.254.169.254/latest/meta-data</code> — enumerate paths</li>
+              <li>Fetch <code>.../iam/security-credentials/</code> — get role name</li>
+              <li>Fetch <code>.../iam/security-credentials/syntex-prod-role</code> — get temp AWS creds</li>
+              <li>Use credentials with AWS CLI to access S3, EC2, Secrets Manager</li>
+            </ol>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Response</h3></div>
+          <pre id="api-response" style="font-size:11px;min-height:150px;padding:14px;margin:0;">// Fetch a URL to see the response...</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div><%- include('../partials/footer') %>
+<script>
+async function fetchURL() {
+  const url = document.getElementById('url-input').value;
+  const r   = await fetch('/k8s-metadata', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url}) });
+  const d   = await r.json();
+  document.getElementById('api-response').textContent = JSON.stringify(d, null, 2);
+  const box = document.getElementById('result');
+  box.style.display = 'block';
+  const flag = d.response?.flag;
+  box.innerHTML = flag
+    ? `<div class="alert alert-danger">⚠️ Metadata accessible!<br><code style="color:var(--success);">🚩 ${flag}</code></div>`
+    : `<div class="alert alert-info">Response received — check panel →</div>`;
+}
+</script>

@@ -1,0 +1,86 @@
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="top-header"><span class="header-title">Webhook Test</span>
+    <div class="header-right"><a href="/profile/<%= user.id %>" class="header-user"><div class="header-avatar"><%= ((user.first_name||user.username).charAt(0)).toUpperCase() %></div></a></div>
+  </div>
+  <div class="page-body">
+    <div class="page-header"><h1>Webhook Signature Bypass</h1><p>Test webhook event delivery — server validates HMAC-SHA256 signatures.</p></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:960px;align-items:start;">
+      <div>
+        <div class="card">
+          <div class="card-header"><h3>Send Webhook Event</h3></div>
+          <div class="card-body">
+            <div id="result" style="display:none;margin-bottom:14px;"></div>
+            <div class="form-group"><label>Event Type</label>
+              <select id="event-type">
+                <option value="payment.success">payment.success</option>
+                <option value="payment.failed">payment.failed</option>
+                <option value="user.created">user.created</option>
+                <option value="user.admin_granted">user.admin_granted</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Payload Data (JSON)</label>
+              <textarea id="payload" rows="4" style="font-family:monospace;font-size:12px;">{"user_id":1,"amount":9999,"status":"success"}</textarea>
+            </div>
+            <div class="form-group"><label>X-Syntex-Signature Header</label>
+              <input type="text" id="sig-header" placeholder="Leave blank to test bypass" style="font-family:monospace;font-size:12px;">
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button onclick="sendWebhook(document.getElementById('sig-header').value)" class="btn btn-primary">Send Event</button>
+              <button onclick="sendWebhook('')"       class="btn btn-warning btn-sm">No Signature</button>
+              <button onclick="sendWebhook('skip')"   class="btn btn-danger btn-sm">bypass keyword</button>
+              <button onclick="sendWebhook('sha256=')" class="btn btn-danger btn-sm">Truncated sig</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-4" style="border-color:var(--warning);">
+          <div class="card-header"><h3>Bypass Methods</h3></div>
+          <div class="card-body" style="font-size:12px;">
+            <table style="width:100%;">
+              <% [['No signature header','Most common — server doesn\'t enforce'],['sig=skip or bypass','Debug backdoor left in code'],['sig=sha256= (truncated)','Prefix match only — too short to be valid'],['Brute force HMAC','With weak secret: hashcat -m 1450']].forEach(([m,d])=>{ %>
+              <tr style="border-bottom:1px solid var(--border-light);">
+                <td style="padding:6px 0;font-family:monospace;font-size:11px;color:var(--danger);"><%= m %></td>
+                <td style="padding:6px 0 6px 12px;font-size:11px;color:var(--text-muted);"><%= d %></td>
+              </tr>
+              <% }) %>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Valid Signature</h3></div>
+          <div class="card-body" style="font-size:12px;">
+            <p style="margin-bottom:8px;color:var(--text-muted);">To send a legitimate signed event:</p>
+            <pre style="font-size:11px;">SECRET="<%= secret %>"
+PAYLOAD='{"event":"payment.success"}'
+SIG="sha256=$(echo -n $PAYLOAD | openssl dgst -sha256 -hmac $SECRET | cut -d' ' -f2)"
+curl -X POST http://syntex.local/webhook-verify \
+  -H "X-Syntex-Signature: $SIG" \
+  -H "Content-Type: application/json" \
+  -d $PAYLOAD</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div><%- include('../partials/footer') %>
+<script>
+async function sendWebhook(sig) {
+  const event   = document.getElementById('event-type').value;
+  const payload = JSON.parse(document.getElementById('payload').value || '{}');
+  const headers = { 'Content-Type':'application/json' };
+  if (sig !== '') headers['X-Syntex-Signature'] = sig;
+  const r = await fetch('/webhook-verify', { method:'POST', headers, body: JSON.stringify({ event, data: payload }) });
+  const d = await r.json();
+  const box = document.getElementById('result');
+  box.style.display = 'block';
+  box.innerHTML = d.flag
+    ? `<div class="alert alert-danger">⚠️ Bypassed! Method: ${d.signature_method}<br><code style="color:var(--success);">🚩 ${d.flag}</code></div>`
+    : d.error
+    ? `<div class="alert alert-warning">❌ ${d.error}</div>`
+    : `<div class="alert alert-success">✅ Valid signature — event processed.</div>`;
+  box.innerHTML += `<pre style="font-size:11px;margin-top:8px;">${JSON.stringify(d,null,2)}</pre>`;
+}
+</script>

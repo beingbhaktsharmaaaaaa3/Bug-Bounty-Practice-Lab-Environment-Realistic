@@ -1,0 +1,68 @@
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="top-header"><span class="header-title">CDN Cache Poisoning</span>
+    <div class="header-right"><a href="/profile/<%= user.id %>" class="header-user"><div class="header-avatar"><%= ((user.first_name||user.username).charAt(0)).toUpperCase() %></div></a></div>
+  </div>
+  <div class="page-body">
+    <div class="page-header"><h1>CDN / Cache Poisoning Lab</h1><p>The X-Forwarded-Host header is trusted for link generation but excluded from the cache key.</p></div>
+    <div style="max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+      <div>
+        <div class="card mb-4">
+          <div class="card-header"><h3>Normal Request</h3></div>
+          <div class="card-body">
+            <button onclick="fetchPage()" class="btn btn-primary" style="width:100%;margin-bottom:8px;">Fetch /cdn-cache (Normal)</button>
+            <button onclick="clearCache()" class="btn btn-secondary btn-sm" style="width:100%;">Clear Cache</button>
+          </div>
+        </div>
+        <div class="card" style="border-color:var(--danger);">
+          <div class="card-header" style="background:var(--danger-bg);"><h3>⚠️ Poison Attack</h3></div>
+          <div class="card-body">
+            <div class="form-group"><label>Malicious Host (X-Forwarded-Host)</label>
+              <input type="text" id="poison-host" value="evil.attacker.com" style="font-family:monospace;">
+            </div>
+            <button onclick="poisonCache()" class="btn btn-danger" style="width:100%;margin-bottom:6px;">☠️ Poison Cache</button>
+            <button onclick="fetchPage()" class="btn btn-warning btn-sm" style="width:100%;">Fetch Again (others now get poisoned response)</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-4">
+          <div class="card-header"><h3>Response Headers</h3></div>
+          <div id="headers" style="font-family:monospace;font-size:11px;padding:14px;min-height:80px;background:var(--page-bg);border-radius:var(--radius);border:1px solid var(--border);">Fetch a page to see cache headers...</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Page Preview</h3></div>
+          <div id="page-preview" style="font-size:12px;padding:14px;min-height:120px;background:var(--page-bg);border-radius:var(--radius);border:1px solid var(--border);">Page content will appear here...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div><%- include('../partials/footer') %>
+<script>
+async function fetchPage(host) {
+  const headers = {};
+  if (host) headers['X-Forwarded-Host'] = host;
+  const r = await fetch('/cdn-cache', { headers });
+  const hdrs = {};
+  ['x-cache','x-cache-key','x-cached-host','x-poisoned','x-cache-age'].forEach(h => {
+    const v = r.headers.get(h);
+    if (v) hdrs[h] = v;
+  });
+  document.getElementById('headers').textContent = Object.entries(hdrs).map(([k,v])=>`${k}: ${v}`).join('\n');
+  const text = await r.text();
+  const poisoned = text.includes('Cache Poisoning Detected');
+  document.getElementById('page-preview').innerHTML = poisoned
+    ? `<div style="color:var(--danger);font-weight:700;">☠️ POISONED RESPONSE — all visitors now see this</div><pre style="font-size:10px;">${text.slice(0,400)}</pre>`
+    : `<pre style="font-size:11px;">${text.slice(0,400)}</pre>`;
+}
+async function poisonCache() {
+  const host = document.getElementById('poison-host').value;
+  await fetchPage(host);
+}
+async function clearCache() {
+  await fetch('/cdn-cache/clear', {method:'POST'});
+  document.getElementById('page-preview').textContent = 'Cache cleared.';
+  document.getElementById('headers').textContent = '';
+}
+</script>

