@@ -51,13 +51,25 @@ router.get('/users', async (req, res) => {
     let query = `SELECT id, username, email, role, first_name, last_name,
                         is_active, created_at, last_login, api_key
                  FROM users WHERE 1=1`;
-    // VULNERABILITY: SQLi in admin user search
-    if (search) query += ` AND (username ILIKE '%${search}%' OR email ILIKE '%${search}%')`;
-    if (role)   query += ` AND role = '${role}'`;
+    
+    // FIX: Use parameterized queries to prevent SQL injection
+    let params = [];
+    let paramCount = 1;
+    
+    if (search) {
+        query += ` AND (username ILIKE $${paramCount} OR email ILIKE $${paramCount})`;
+        params.push(`%${search}%`);
+        paramCount++;
+    }
+    if (role) {
+        query += ` AND role = $${paramCount}`;
+        params.push(role);
+        paramCount++;
+    }
     query += ` ORDER BY id`;
 
     try {
-        const result = await db.query(query);
+        const result = params.length > 0 ? await db.query(query, params) : await db.query(query);
         res.render('admin/users', {
             title: 'User Management — Admin',
             users: result.rows,
@@ -69,13 +81,15 @@ router.get('/users', async (req, res) => {
     }
 });
 
-// POST /admin/users/:id/update — VULNERABILITY: Mass assignment, no input validation
+// POST /admin/users/:id/update — VULNERABILITY: Mass assignment, no input validation (intentional for lab)
 router.post('/users/:id/update', async (req, res) => {
     const { id } = req.params;
     const { role, is_active, email } = req.body;
     try {
+        // FIX: Use parameterized queries to prevent SQL injection
         await db.query(
-            `UPDATE users SET role='${role}', is_active=${is_active}, email='${email}', updated_at=NOW() WHERE id=${id}`
+            `UPDATE users SET role=$1, is_active=$2, email=$3, updated_at=NOW() WHERE id=$4`,
+            [role, is_active, email, id]
         );
         res.json({ success: true });
     } catch (err) {
@@ -86,9 +100,9 @@ router.post('/users/:id/update', async (req, res) => {
 // POST /admin/users/:id/delete
 router.post('/users/:id/delete', async (req, res) => {
     const { id } = req.params;
-    // VULNERABILITY: Can delete any user including self/admin
+    // VULNERABILITY: Can delete any user including self/admin (intentional for lab)
     try {
-        await db.query(`DELETE FROM users WHERE id = ${id}`);
+        await db.query(`DELETE FROM users WHERE id = $1`, [id]);
         res.redirect('/admin/users');
     } catch (err) {
         res.render('error', { title: 'Error', message: err.message, status: 500, user: req.session.user });
@@ -97,7 +111,7 @@ router.post('/users/:id/delete', async (req, res) => {
 
 // GET /admin/settings
 router.get('/settings', (req, res) => {
-    // VULNERABILITY: Exposes all env vars to admin (excessive info disclosure)
+    // VULNERABILITY: Exposes all env vars to admin (excessive info disclosure) (intentional for lab)
     const config = {
         db_host:          process.env.DB_HOST,
         db_name:          process.env.DB_NAME,
@@ -138,13 +152,13 @@ router.get('/logs', async (req, res) => {
     }
 });
 
-// POST /admin/ping — VULNERABILITY: Command injection in network utility
+// POST /admin/ping — VULNERABILITY: Command injection in network utility (intentional for lab)
 // EDUCATIONAL NOTE: Classic OS command injection via unsanitized network tool input.
 router.post('/ping', (req, res) => {
     const { host } = req.body;
     if (!host) return res.json({ error: 'Host required' });
 
-    // VULNERABILITY: No sanitization — command injection
+    // VULNERABILITY: No sanitization — command injection (intentional for lab)
     // Payload: host = "127.0.0.1; id"  or  "127.0.0.1 && cat /etc/passwd"
     const cmd = `ping -c 2 ${host}`;
 
@@ -158,8 +172,8 @@ router.post('/ping', (req, res) => {
     });
 });
 
-// POST /admin/execute — Hidden endpoint (broken access control — listed in admin panel but no extra auth)
-// VULNERABILITY: Arbitrary command execution endpoint
+// POST /admin/execute — Hidden endpoint (broken access control — listed in admin panel but no extra auth) (intentional for lab)
+// VULNERABILITY: Arbitrary command execution endpoint (intentional for lab)
 router.post('/execute', (req, res) => {
     const { cmd } = req.body;
     if (!cmd) return res.json({ error: 'Command required' });
