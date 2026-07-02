@@ -30,7 +30,7 @@ app.use(session({
 app.use(require('./middleware/cors'));
 
 // ─── LAB_MODE globals ─────────────────────────────────────────────
-const { getLabMode, labFeatureVisible, blockBountyOnMainSite } = require('./middleware/program');
+const { getLabMode, labFeatureVisible, blockBountyOnMainSite, setLabMode } = require('./middleware/program');
 
 app.use((req, res, next) => {
     const mode = getLabMode();
@@ -41,6 +41,8 @@ app.use((req, res, next) => {
         showFlags:      labFeatureVisible('flags'),
         showChallenges: labFeatureVisible('challenges'),
         showSolutions:  labFeatureVisible('solutions'),
+        inlineHints:    false,   // hints ONLY on /program/hints — never on vuln pages
+        freeHintUnlock: labFeatureVisible('free_hint_unlock'),
         showBanner:     true,
         bannerColor:    { beginner:'#15803D', intermediate:'#B45309', hard:'#B91C1C', realistic:'#1B3A6B' }[mode] || '#1B3A6B',
         bannerLabel:    mode.toUpperCase(),
@@ -181,6 +183,22 @@ app.get('/hall-of-fame',   (req,res) => res.redirect('/program/hall-of-fame'));
 app.get('/leaderboard',    (req,res) => res.redirect('/program/leaderboard'));
 app.get('/security/policy',(req,res) => res.redirect('/program'));
 app.get('/health',         (req,res) => res.json({ status:'ok', version:'4.1', mode:getLabMode() }));
+
+
+// ─── LAB_MODE switch endpoint (admin only) ────────────────────────
+// POST /api/lab-mode { mode: "beginner"|"intermediate"|"hard"|"realistic" }
+app.post('/api/lab-mode', require('./middleware/auth').requireAdmin, (req, res) => {
+    const { mode } = req.body;
+    try {
+        setLabMode(mode);
+        res.json({ success: true, mode, message: `Lab mode switched to ${mode}` });
+    } catch(e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+app.get('/api/lab-mode', (req, res) => {
+    res.json({ mode: getLabMode() });
+});
 
 // ─── 404 ──────────────────────────────────────────────────────────
 app.use((req, res) => {
