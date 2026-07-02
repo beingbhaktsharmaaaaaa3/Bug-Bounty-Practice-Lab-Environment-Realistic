@@ -457,3 +457,15 @@ CREATE TABLE IF NOT EXISTS webhooks (
     is_active       BOOLEAN DEFAULT true,
     created_at      TIMESTAMP DEFAULT NOW()
 );
+
+-- ── v4.1 migration — add missing columns to reports ──────────────
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS affected_asset    VARCHAR(200);
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS flag_slug         VARCHAR(100);
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS flag_submitted    TEXT;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS flag_valid        BOOLEAN;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS flag_verified     BOOLEAN DEFAULT false;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS vuln_slug         VARCHAR(100);
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS points_awarded    INTEGER DEFAULT 0;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS first_blood       BOOLEAN DEFAULT false;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS verified_at       TIMESTAMP;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS validation_message TEXT;
