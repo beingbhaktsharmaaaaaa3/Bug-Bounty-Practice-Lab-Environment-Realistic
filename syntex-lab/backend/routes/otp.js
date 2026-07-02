@@ -55,8 +55,7 @@ router.get('/brute-force', requireAuth, (req, res) => {
         scenario: 'brute-force',
         result:   null,
         attempts: 0,
-        otp_hint: req.app.locals.LAB_MODE === 'beginner' ||
-                  process.env.LAB_MODE === 'beginner' ? otp : null,
+        otp_hint: require('../middleware/program').getLabMode() === 'beginner' ? otp : null,
         user:     req.session.user,
     });
 });
@@ -264,7 +263,7 @@ router.post('/predictable/send', requireAuth, async (req, res) => {
         success: true,
         message: `OTP sent to your registered email.`,
         // VULNERABILITY: Algorithm hints in response for lab purposes
-        debug:   process.env.LAB_MODE === 'beginner' ? {
+        debug:   require('../middleware/program').getLabMode() === 'beginner' ? {
             note:      'OTP generation is time-based and username-dependent',
             algorithm: 'MD5(username + floor(now/60000))',
         } : undefined,
@@ -309,7 +308,7 @@ router.get('/reuse', requireAuth, (req, res) => {
     res.render('otp/reuse', {
         title:    'Login Verification — Syntex Solutions',
         result:   null,
-        otp_hint: process.env.LAB_MODE === 'beginner' ? otp : null,
+        otp_hint: require('../middleware/program').getLabMode() === 'beginner' ? otp : null,
         user:     req.session.user,
     });
 });
@@ -355,7 +354,7 @@ router.get('/short', requireAuth, (req, res) => {
     res.render('otp/short', {
         title:    'Phone Verification — Syntex Solutions',
         result:   null,
-        otp_hint: process.env.LAB_MODE === 'beginner' ? otp : null,
+        otp_hint: require('../middleware/program').getLabMode() === 'beginner' ? otp : null,
         user:     req.session.user,
     });
 });
