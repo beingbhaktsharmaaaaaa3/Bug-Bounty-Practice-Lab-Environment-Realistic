@@ -61,7 +61,11 @@
             <p style="font-size:14px;line-height:1.8;"><%= hintText %></p>
           <% } else if (canUnlock) { %>
             <div style="text-align:center;padding:16px 0;">
-              <p style="font-size:13px;color:var(--prog-muted);margin-bottom:14px;">Try to find this vulnerability yourself first. Unlock this hint only if you're stuck.</p>
+              <% if(locals.mode === 'beginner'){ %>
+              <p style="font-size:13px;color:var(--prog-muted);margin-bottom:6px;">Beginner mode — hints are freely available. Use them to learn techniques.</p>
+              <% } else { %>
+              <p style="font-size:13px;color:var(--prog-muted);margin-bottom:14px;">Stuck? Unlock this hint — but try the vulnerability yourself first.</p>
+              <% } %>
               <form action="/program/hints/<%= slug %>/<%= level %>/unlock" method="POST" style="display:inline;">
                 <button type="submit" class="prog-btn prog-btn-outline">
                   🔓 Unlock Level <%= level %> Hint
@@ -70,7 +74,9 @@
             </div>
           <% } else { %>
             <div style="text-align:center;padding:12px 0;">
-              <p style="font-size:12px;color:var(--prog-muted);">Unlock the previous hint level first.</p>
+              <p style="font-size:12px;color:var(--prog-muted);">
+                <% if(locals.mode === 'intermediate'){ %>Unlock Level <%= level-1 %> first — sequential unlocking enforced in Intermediate mode.<% } else { %>Unlock the previous level first.<% } %>
+              </p>
             </div>
           <% } %>
         </div>
